@@ -1,0 +1,23 @@
+name: OIDC claims (merge_group)
+on:
+  merge_group:
+    types: [checks_requested]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  claims:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Show context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "workflow_ref=${{ github.workflow_ref }}"
+          echo "job_workflow_ref=${{ job.workflow_ref }}"
+      - name: Fetch OIDC token and decode claims
+        run: |
+          RESP=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=lab")
+          echo "$RESP" | head -c 300; echo
+          echo "$RESP" | jq -r .value | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | jq .
